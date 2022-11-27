@@ -2,7 +2,7 @@
 
 ## 1.1 thread 函数
 
-```c++
+```cpp
 #include<thread>
 void th_work(int args);
 ...
@@ -10,9 +10,29 @@ std::thread th1(th_work,args);
 th1.join()//th1.detach()
 ```
 
+### 1.1.1 pthread（c）
+
+```c
+#include <pthread.h>
+int pthread_create
+(
+pthread_t *thread, //指向线程标识符的指针
+const pthread_attr_t *attr, //线程属性,默认可填NULL
+void *(*start_routine) (void *),  //线程运行函数的起始地址
+void *arg  //运行函数的参数,不需要参数可填NULL
+);
+
+
+ pthread_t thread_id1;
+void *pthread_func1(void *arg)
+{/*  */}
+if(pthread_create(&thread_id1,NULL,pthread_func1,NULL))
+{/*  */}   //创建成功返回0
+```
+
 ## 1.2 lambda
 
-```c++
+```cpp
 std:: thread([](){
     //函数执行内容
 }).join();
@@ -25,7 +45,7 @@ th2.detach();
 
 ## 1.3 可调用类对象
 
-```c++
+```cpp
 class tmp
 {
   public:
@@ -50,7 +70,7 @@ th3.join();
 
 **类对象**，分3种
 
-```c++
+```cpp
 void th3_work1(const tmp& tmp1);
 tmp tmp1;
 1. 类对象
@@ -58,20 +78,21 @@ std::thread th3(th3_work1,tmp1);//虽然是接收类的引用参数，但传递�
 
 2. 类对象的引用       
 std::thread th3(th3_work1,std::ref(tmp1);//真正的引用传递，
-//子线程无法管理对象的生命周期但又会使用它，detach时就会访问已析构的对象
+//子线程无法管理对象的生命周期但又会使用它，detach时就可能会访问已析构的对象
 
 3.临时对象 
-std::thread th3(th3_work1,tmp2);    
 //隐式转换时发生在子线程
+std::thread th3(th3_work1,tmp2);   
+ 
+// 在主线程 显式转换后，传参就变成第一种，会进行拷贝
 std::thread th3(th3_work1,(tmp)tmp2);  
-// 在主线程 显示转换后，传参就变成第一种，会进行拷贝
 ```
 
 # 2. mutex 锁
 
 共享资源需确保同一时刻只有一个线程去操作，否则“一张票会卖给多个人”
 
-```c++
+```cpp
 #include<mutex>
 
 1. lock/unlock
@@ -93,7 +114,7 @@ mtx.unlock();
 
 # 3. 条件变量,配合mutex同步线程
 
-```c++
+```cpp
 #include<condition_variable>
 #include<mutex>
 
