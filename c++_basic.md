@@ -45,12 +45,21 @@ uptr[i] = i * i;
 
 ## 1.2 std::shared_ptr<> ，std::weak_ptr<>
 
- shared_ptr:共享资源所有权的指针,引用计数为0后自定释放资源，weak_ptr:共享资源的观察者，需要和 shared_ptr 一起使用，不影响资源的生命周期
+ shared_ptr:共享资源所有权的指针,引用计数为0后自定释放资源，
+
+weak_ptr:共享资源的观察者，需要和 shared_ptr 一起使用，不影响资源的生命周期
+
+    不改变资源的引用计数、持有的计数是同一资源观察者的计数、无法直接访问资源即解引用操作，需通过lock()方法提升为shared_ptr
 
 `shared_ptr` 有两个数据成员，一个是指向 对象的指针 `ptr`，另一个是 `ref_count` 指针指向控制信息 （包含vptr、use_count、weak_count、ptr等）；
 
-```c++
-
+```cpp
+std::shared_ptr<int> sp_ptr;
+std::weak_ptr<int> wp_ptr = sp_ptr;
+wp_ptr.use_count()  //观测资源的引用计数
+wp_ptr.expired()    //被观测的资源是否销毁、可用
+std::shared_ptr<int> sp2 = wp_ptr.lock()  
+//expired()true时获得一个可用shared_ptr对象，否则返回null
 ```
 
 # 2.  std::bind,std::function
@@ -60,7 +69,7 @@ std::function<返回值（参数类型列表）>, 函数打包，普通函数、
 ```cpp
 #include<functional>
 void f1(int a,int b,int c){
-    std:;cout<<a<<b<<c<<std::endl;
+    std::cout<<a<<b<<c<<std::endl;
 }
 std::function<void(int,int,int)> task= 
 std::bind(f1,std::placeholders::_2,std::placeholders::_3,std::placeholders::_1);
@@ -98,7 +107,43 @@ a1.set("temporary str1","temporary str2");
           return 0;
         }
 //输入为左值转发左值，输入为右值转发右值
-
 ```
 
+# 4.semaphore 信号量
 
+控制同时访问特定资源的线程数量，用于那些资源有明确访问数量限制的场景，常用于限流
+
+```cpp
+semaphore.acquire();//当前线程会尝试去同步队列获取一个令牌 ，失败进入阻塞队列
+semaphore.release(); // 线程会尝试释放一个令牌，释放令牌成功之后，同时会唤醒同步队列中的一个线程
+```
+
+# 5. struct 字节对齐和字节补充
+
+```c
+typedef struct D
+{
+     short b; //4   对齐
+     char a;  //4   对齐
+     double c; //8
+     char e;   //8   字节补充
+}D;
+sizeof(D) == 24 
+```
+
+# 6. future
+
+```cpp
+std::future<int> f2()
+{
+    return std::async(std::launch::async, [](std::function<std::future<int>(void)> previous)->int
+    {
+        std::cout<<"f2 start"<<std::endl;
+        int ret = f1().get();
+        std::cout<<"f2 middle, received return value "<<ret<<" from f1()"<<std::endl;
+        std::this_thread::sleep_for(3s);
+        std::cout<<"f2 end"<<std::endl;
+        return ret + 111;
+    },f1);
+}
+```
